@@ -4,7 +4,8 @@
   "description": "A simple backend created for hackerbay interview",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest --coverage",
+    "test:watch": "jest --watch --coverage"
   },
   "keywords": [
     "koa",
@@ -13,5 +14,16 @@
     "authentication"
   ],
   "author": "buoyantair <buoyantair@protonmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "koa": "^2.7.0",
+    "koa-router": "^7.4.0"
+  },
+  "devDependencies": {
+    "jest": "^24.7.1",
+    "supertest": "^4.0.2"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  }
 }
