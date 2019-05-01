@@ -3,6 +3,7 @@ const Koa = require('koa')
 const Router = require('koa-router')
 const koaBody = require('koa-body')
 const jwt = require('jsonwebtoken')
+const jsonpatch = require('jsonpatch')
 
 const { TOKEN_SECRET } = process.env
 
@@ -27,7 +28,34 @@ router.post('/auth', async ctx => {
 })
 
 router.post('/patch', authMiddleware, async ctx => {
-  ctx.body = 'To be implemented'
+  const { object, patch } = ctx.request.body
+  if (!object && !patch) {
+    ctx.status = 400
+    ctx.type = 'application/json'
+    ctx.body = {
+      message: 'Please send a body with a "patch" property along with the "body" property to which the patch should be applied.'
+    }
+  } else if (!object) {
+    ctx.status = 400
+    ctx.type = 'application/json'
+    ctx.body = {
+      message: 'Please send a body with an "object" property along with the "patch" to be applied to the "body" property.'
+    }
+  } else if (!patch) {
+    ctx.status = 400
+    ctx.type = 'application/json'
+    ctx.body = {
+      message: 'Please send a body with a "patch" property along with the "body" property to which the patch should be applied.'
+    }
+  }
+
+  if (object && patch) {
+    const patchedObject = jsonpatch.apply_patch(object, patch)
+
+    ctx.status = 200
+    ctx.type = 'application/json'
+    ctx.body = patchedObject
+  }
 })
 
 router.post('/thumbnail', authMiddleware, async ctx => {
