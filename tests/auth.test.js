@@ -53,7 +53,7 @@ describe('auth: protected routes', () => {
   const server = app.listen()
   const request = supertest.agent(server)
   const patchReq = {
-    json: {
+    object: {
       people: [{
         name: 'Robin',
         age: 16
