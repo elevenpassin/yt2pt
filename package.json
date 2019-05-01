@@ -1,0 +1,17 @@
+{
+  "name": "hackerbay-interview-backend",
+  "version": "0.0.0",
+  "description": "A simple backend created for hackerbay interview",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [
+    "koa",
+    "node",
+    "backend",
+    "authentication"
+  ],
+  "author": "buoyantair <buoyantair@protonmail.com>",
+  "license": "MIT"
+}
