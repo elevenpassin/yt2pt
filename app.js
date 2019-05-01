@@ -26,6 +26,14 @@ router.post('/auth', async ctx => {
   }
 })
 
+router.post('/patch', authMiddleware, async ctx => {
+  ctx.body = 'To be implemented'
+})
+
+router.post('/thumbnail', authMiddleware, async ctx => {
+  ctx.body = 'To be implemented'
+})
+
 app.use(logger)
 app.use(koaBody({
   jsonLimit: '1kb'
@@ -61,6 +69,35 @@ async function pageNotFound(ctx) {
     default:
       ctx.type = 'text'
       ctx.body = 'Page Not Found'
+  }
+}
+
+async function authMiddleware(ctx, next) {
+  const token = ctx.headers.authorization
+  if (token) {
+    let isValid = false
+    try {
+      jwt.verify(token, TOKEN_SECRET)
+      isValid = true
+    } catch (e) {
+      isValid = false
+    }
+
+    if (isValid) {
+      await next()
+    } else {
+      ctx.status = 401
+      ctx.type = 'application/json'
+      ctx.body = {
+        message: 'Please authorize yourself to gain access to this resource'
+      }
+    }
+  } else {
+    ctx.status = 400
+    ctx.type = 'application/json'
+    ctx.body = {
+      message: 'Please send your authorization token in order to authorize yourself'
+    }
   }
 }
 
