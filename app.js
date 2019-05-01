@@ -1,5 +1,10 @@
+require('dotenv').config()
 const Koa = require('koa')
 const Router = require('koa-router')
+const koaBody = require('koa-body')
+const jwt = require('jsonwebtoken')
+
+const { TOKEN_SECRET } = process.env
 
 const app = new Koa()
 const router = new Router()
@@ -8,8 +13,23 @@ router.get('/', async ctx => {
   ctx.body = 'Hello world'
 })
 
+router.post('/auth', async ctx => {
+  const { username, password } = ctx.request.body
+
+  if (!username)
+    ctx.throw(400, 'username is required')
+  if (!password)
+    ctx.throw(400, 'password is required')
+
+  ctx.body = {
+    token: await createToken(username, password, TOKEN_SECRET, '30m')
+  }
+})
 
 app.use(logger)
+app.use(koaBody({
+  jsonLimit: '1kb'
+}))
 app.use(router.routes())
 app.use(router.allowedMethods())
 app.use(pageNotFound)
@@ -42,6 +62,13 @@ async function pageNotFound(ctx) {
       ctx.type = 'text'
       ctx.body = 'Page Not Found'
   }
+}
+
+async function createToken(username, password, secret, expiresIn) {
+  return jwt.sign({
+    username,
+    password
+  }, secret, { expiresIn })
 }
 
 module.exports = app

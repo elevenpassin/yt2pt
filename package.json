@@ -17,7 +17,10 @@
   "author": "buoyantair <buoyantair@protonmail.com>",
   "license": "MIT",
   "dependencies": {
+    "dotenv": "^7.0.0",
+    "jsonwebtoken": "^8.5.1",
     "koa": "^2.7.0",
+    "koa-body": "^4.1.0",
     "koa-router": "^7.4.0",
     "nodemon": "^1.19.0"
   },
