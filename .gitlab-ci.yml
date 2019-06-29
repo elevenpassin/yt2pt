@@ -2,6 +2,7 @@
 
     stages:
       - setup
+      - lint
       - test
 
     cache:
@@ -15,6 +16,10 @@
       artifacts:
         paths:
           - node_modules/
+
+    check_linting:
+      stage: lint
+      script: npm run lint
 
     testing:
       stage: test
