@@ -82,3 +82,8 @@ typings/
 
 # DynamoDB Local files
 .dynamodb/
+
+# yt2pt
+yt2pt_downloads/
+.vscode/
+.DS_Store
