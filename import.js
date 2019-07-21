@@ -1,22 +1,29 @@
+const dotenv = require('dotenv')
 const { google } = require('googleapis')
 const path = require('path')
 const fs = require('fs')
-const youtubeDl = require('youtube-dl')
 const axios = require('axios')
 const querystring = require('querystring')
 const FormData = require('form-data')
 
+// Configure environment variables
+dotenv.config()
+
+const {
+  YOUTUBE_API_KEY,
+  PEERTUBE_INSTANCE,
+  PEERTUBE_USERNAME,
+  PEERTUBE_PASSWORD,
+  PEERTUBE_CHANNEL_ID,
+  YOUTUBE_CHANNEL_ID
+} = process.env
+
 const youtube = google.youtube({
   version: 'v3',
-  auth: 'AIzaSyBTe2_RTdZ6nyqQGyZ9PWc0yHP_FmzBirM'
+  auth: YOUTUBE_API_KEY
 })
-const USERNAME = 'anarchist'
-const PASSWORD = 'D#*%J^K^rwtvp3YRk6$Lehg$mH@$K9'
-const CHANNEL_ID = 'UCdoRUr0SUpfGQC4vsXZeovg'
-const PEERTUBE_CHANNEL_ID = 10674
 const DOWNLOAD_LOCATION = path.resolve(__dirname, 'yt2pt_downloads')
-const INSTANCE_URL = 'https://peertube.video'
-const INSTANCE_API_URL = `${INSTANCE_URL}/api/v1`
+const INSTANCE_API_URL = `${PEERTUBE_INSTANCE}/api/v1`
 const APP_STATE = {
   channelInfo: {},
   videosList: {}
@@ -97,51 +104,6 @@ function createDownloadFolderIfNotExists() {
   })
 }
 
-// function downloadVideo(videoId) {
-//   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
-//   const video = youtubeDl(videoUrl)
-//   const videoLocation = `${DOWNLOAD_LOCATION}/${videoId}.mp4`
-
-//   return new Promise((resolve, reject) => {
-//     let size = 0;
-//     video.on('info', info => {
-//       console.log('Download started');
-//       console.log('filename: ' + info._filename);
-//       console.log('size: ' + info.size);
-//       size = info.size
-//     })
-//     video.on('error', reject)
-//     const stream = fs.createWriteStream(videoLocation)
-//     stream.on('close', () => {
-//       console.log('Finished downloading')
-//       resolve({
-//         videoLocation,
-//         size
-//       })
-//     })
-//     video.pipe(stream)
-//   })
-// }
-
-// async function downloadVideos(limit = 0) {
-//   let videosDownloaded = 0;
-//   try {
-//     await getChannelInformation(CHANNEL_ID)
-//     await getVideosList(APP_STATE.channelInfo)
-//     await createDownloadFolderIfNotExists()
-
-//     while (videosDownloaded < limit) {
-//       const { videoLocation, size } = await downloadVideo(APP_STATE.videosList[videosDownloaded].videoId)
-//       APP_STATE.videosList[videosDownloaded].videoLocation = videoLocation
-//       APP_STATE.videosList[videosDownloaded].videoSize = size
-//       videosDownloaded += 1;
-//       console.log(APP_STATE.videosList[videosDownloaded])
-//     }
-//   } catch (e) {
-//     console.error(e)
-//   }
-// }
-
 async function getAccessToken() {
   const { data: {
     client_id,
@@ -158,8 +120,8 @@ async function getAccessToken() {
     client_secret,
     grant_type: 'password',
     response_type: 'code',
-    username: USERNAME,
-    password: PASSWORD
+    username: PEERTUBE_USERNAME,
+    password: PEERTUBE_PASSWORD
   }), {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
@@ -188,7 +150,7 @@ async function importVideo(index) {
 
 async function yt2pt(limit) {
   try {
-    await getChannelInformation(CHANNEL_ID)
+    await getChannelInformation(YOUTUBE_CHANNEL_ID)
     await getVideosList(APP_STATE.channelInfo)
     let retries = 0;
     let videosUploaded = 0;
@@ -202,4 +164,4 @@ async function yt2pt(limit) {
   }
 }
 
-yt2pt(180)
+yt2pt(1)
