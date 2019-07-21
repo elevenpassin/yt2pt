@@ -1,3 +1,4 @@
+const dotenv = require('dotenv')
 const { google } = require('googleapis')
 const path = require('path')
 const fs = require('fs')
@@ -6,17 +7,24 @@ const axios = require('axios')
 const querystring = require('querystring')
 const FormData = require('form-data')
 
+// Configure environment variables
+dotenv.config()
+
+const {
+  YOUTUBE_API_KEY,
+  PEERTUBE_INSTANCE,
+  PEERTUBE_USERNAME,
+  PEERTUBE_PASSWORD,
+  PEERTUBE_CHANNEL_ID,
+  YOUTUBE_CHANNEL_ID
+} = process.env
+
 const youtube = google.youtube({
   version: 'v3',
-  auth: 'AIzaSyBTe2_RTdZ6nyqQGyZ9PWc0yHP_FmzBirM'
+  auth: YOUTUBE_API_KEY
 })
-const USERNAME = 'ranjithraj@swecha.net'
-const PASSWORD = 'Lif#@IIIT10'
-const CHANNEL_ID = 'UCdoRUr0SUpfGQC4vsXZeovg'
-const PEERTUBE_CHANNEL_ID = 12478
 const DOWNLOAD_LOCATION = path.resolve(__dirname, 'yt2pt_downloads')
-const INSTANCE_URL = 'https://peertube.social'
-const INSTANCE_API_URL = `${INSTANCE_URL}/api/v1`
+const INSTANCE_API_URL = `${PEERTUBE_INSTANCE}/api/v1`
 const APP_STATE = {
   channelInfo: {},
   videosList: {}
@@ -125,7 +133,7 @@ function downloadVideo(videoId) {
 async function downloadVideos(limit = 0) {
   let videosDownloaded = 0;
   try {
-    await getChannelInformation(CHANNEL_ID)
+    await getChannelInformation(YOUTUBE_CHANNEL_ID)
     await getVideosList(APP_STATE.channelInfo)
     await createDownloadFolderIfNotExists()
 
@@ -159,8 +167,8 @@ async function yt2pt(limit) {
       client_secret,
       grant_type: 'password',
       response_type: 'code',
-      username: USERNAME,
-      password: PASSWORD
+      username: PEERTUBE_USERNAME,
+      password: PEERTUBE_PASSWORD
     }), {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
@@ -195,4 +203,4 @@ async function yt2pt(limit) {
   }
 }
 
-yt2pt(10)
+yt2pt(1)

@@ -24,6 +24,7 @@
     "commander": "^2.20.0",
     "dotenv": "^7.0.0",
     "form-data": "^2.5.0",
+    "googleapis": "^41.0.1",
     "nodemon": "^1.19.0",
     "querystring": "^0.2.0",
     "youtube-dl": "^2.0.0"
