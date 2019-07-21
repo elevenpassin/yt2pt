@@ -30,7 +30,7 @@ const APP_STATE = {
   videosList: {}
 }
 
-async function getChannelInformation(id) {
+async function getChannelInformation (id) {
   try {
     const response = await youtube.channels.list({
       id,
@@ -50,20 +50,19 @@ async function getChannelInformation(id) {
   }
 }
 
-
-async function getVideosList(channelInfo, pageToken) {
+async function getVideosList (channelInfo, pageToken) {
+  function fetchVideos (playlistId, pageToken) {
+    return youtube.playlistItems.list({
+      playlistId,
+      part: 'id,snippet,contentDetails',
+      maxResults: 50,
+      pageToken: pageToken || ''
+    })
+  }
   try {
-    let videos = [];
+    let videos = []
 
-    function fetchVideos(playlistId, pageToken) {
-      return youtube.playlistItems.list({
-        playlistId,
-        part: 'id,snippet,contentDetails',
-        maxResults: 50,
-        pageToken: pageToken || ''
-      })
-    }
-    let response = await fetchVideos(channelInfo.uploadsPlaylist, pageToken);
+    let response = await fetchVideos(channelInfo.uploadsPlaylist, pageToken)
 
     while (response.data.nextPageToken) {
       const mappedVideosList = response.data.items.map(({ contentDetails: { videoId }, snippet: {
@@ -76,7 +75,7 @@ async function getVideosList(channelInfo, pageToken) {
       }))
       videos = [...videos, ...mappedVideosList]
       response = await fetchVideos(channelInfo.uploadsPlaylist, response.data.nextPageToken)
-      console.log(`Collected ${videos.length} of ${channelInfo.totalVideos}`);
+      console.log(`Collected ${videos.length} of ${channelInfo.totalVideos}`)
     }
 
     console.log('Collected all videos!')
@@ -87,7 +86,7 @@ async function getVideosList(channelInfo, pageToken) {
   }
 }
 
-function createDownloadFolderIfNotExists() {
+function createDownloadFolderIfNotExists () {
   return new Promise(async (resolve, reject) => {
     try {
       await fs.promises.access(DOWNLOAD_LOCATION)
@@ -104,17 +103,17 @@ function createDownloadFolderIfNotExists() {
   })
 }
 
-function downloadVideo(videoId) {
+function downloadVideo (videoId) {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
   const video = youtubeDl(videoUrl)
   const videoLocation = `${DOWNLOAD_LOCATION}/${videoId}.mp4`
 
   return new Promise((resolve, reject) => {
-    let size = 0;
+    let size = 0
     video.on('info', info => {
-      console.log('Download started');
-      console.log('filename: ' + info._filename);
-      console.log('size: ' + info.size);
+      console.log('Download started')
+      console.log('filename: ' + info._filename)
+      console.log('size: ' + info.size)
       size = info.size
     })
     video.on('error', reject)
@@ -130,8 +129,8 @@ function downloadVideo(videoId) {
   })
 }
 
-async function downloadVideos(limit = 0) {
-  let videosDownloaded = 0;
+async function downloadVideos (limit = 0) {
+  let videosDownloaded = 0
   try {
     await getChannelInformation(YOUTUBE_CHANNEL_ID)
     await getVideosList(APP_STATE.channelInfo)
@@ -141,7 +140,7 @@ async function downloadVideos(limit = 0) {
       const { videoLocation, size } = await downloadVideo(APP_STATE.videosList[videosDownloaded].videoId)
       APP_STATE.videosList[videosDownloaded].videoLocation = videoLocation
       APP_STATE.videosList[videosDownloaded].videoSize = size
-      videosDownloaded += 1;
+      videosDownloaded += 1
       console.log(APP_STATE.videosList[videosDownloaded])
     }
   } catch (e) {
@@ -149,39 +148,38 @@ async function downloadVideos(limit = 0) {
   }
 }
 
-async function yt2pt(limit) {
+async function yt2pt (limit) {
   try {
-    await downloadVideos(limit);
+    await downloadVideos(limit)
     const { data: {
-      client_id,
-      client_secret
+      client_id: clientId,
+      client_secret: clientSecret
     } } = await axios.get(`${INSTANCE_API_URL}/oauth-clients/local`)
     const {
       data: {
-        access_token,
-        expires_in,
-        refresh_token
+        access_token: accessToken,
+        expires_in: expiresIn
       }
     } = await axios.post(`${INSTANCE_API_URL}/users/token`, querystring.stringify({
-      client_id,
-      client_secret,
+      clientId,
+      clientSecret,
       grant_type: 'password',
       response_type: 'code',
       username: PEERTUBE_USERNAME,
       password: PEERTUBE_PASSWORD
     }), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      })
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    })
 
-    console.log(`Access token expires in ${expires_in / (1000 * 60)} minutes`)
+    console.log(`Access token expires in ${expiresIn / (1000 * 60)} minutes`)
 
-    let videosUploaded = 0;
+    let videosUploaded = 0
     while (videosUploaded < limit) {
-      const videoToUpload = APP_STATE.videosList[videosUploaded];
+      const videoToUpload = APP_STATE.videosList[videosUploaded]
       console.log(`Uploading video at ${videoToUpload.videoLocation}`)
-      const formData = new FormData();
+      const formData = new FormData()
       formData.append('channelId', PEERTUBE_CHANNEL_ID)
       formData.append('name', videoToUpload.title)
       formData.append('description', videoToUpload.description)
@@ -191,11 +189,11 @@ async function yt2pt(limit) {
       await axios.post(`${INSTANCE_API_URL}/videos/upload`, formData, {
         headers: {
           ...formData.getHeaders(),
-          'Authorization': `Bearer ${access_token}`
+          'Authorization': `Bearer ${accessToken}`
         },
-        maxContentLength: videoToUpload.videoSize * 1.5,
+        maxContentLength: videoToUpload.videoSize * 1.5
       })
-      videosUploaded += 1;
+      videosUploaded += 1
       console.log(`uploaded ${videosUploaded} / ${APP_STATE.channelInfo.totalVideos}`)
     }
   } catch (e) {

@@ -1,7 +1,5 @@
 const dotenv = require('dotenv')
 const { google } = require('googleapis')
-const path = require('path')
-const fs = require('fs')
 const axios = require('axios')
 const querystring = require('querystring')
 const FormData = require('form-data')
@@ -22,14 +20,13 @@ const youtube = google.youtube({
   version: 'v3',
   auth: YOUTUBE_API_KEY
 })
-const DOWNLOAD_LOCATION = path.resolve(__dirname, 'yt2pt_downloads')
 const INSTANCE_API_URL = `${PEERTUBE_INSTANCE}/api/v1`
 const APP_STATE = {
   channelInfo: {},
   videosList: {}
 }
 
-async function getChannelInformation(id) {
+async function getChannelInformation (id) {
   try {
     const response = await youtube.channels.list({
       id,
@@ -49,20 +46,20 @@ async function getChannelInformation(id) {
   }
 }
 
+async function getVideosList (channelInfo, pageToken) {
+  function fetchVideos (playlistId, pageToken) {
+    return youtube.playlistItems.list({
+      playlistId,
+      part: 'id,snippet,contentDetails',
+      maxResults: 50,
+      pageToken: pageToken || ''
+    })
+  }
 
-async function getVideosList(channelInfo, pageToken) {
   try {
-    let videos = [];
+    let videos = []
 
-    function fetchVideos(playlistId, pageToken) {
-      return youtube.playlistItems.list({
-        playlistId,
-        part: 'id,snippet,contentDetails',
-        maxResults: 50,
-        pageToken: pageToken || ''
-      })
-    }
-    let response = await fetchVideos(channelInfo.uploadsPlaylist, pageToken);
+    let response = await fetchVideos(channelInfo.uploadsPlaylist, pageToken)
 
     while (response.data.nextPageToken) {
       const mappedVideosList = response.data.items.map(({ contentDetails: { videoId }, snippet: {
@@ -76,7 +73,7 @@ async function getVideosList(channelInfo, pageToken) {
       }))
       videos = [...videos, ...mappedVideosList]
       response = await fetchVideos(channelInfo.uploadsPlaylist, response.data.nextPageToken)
-      console.log(`Collected ${videos.length} of ${channelInfo.totalVideos}`);
+      console.log(`Collected ${videos.length} of ${channelInfo.totalVideos}`)
     }
 
     console.log('Collected all videos!')
@@ -87,55 +84,36 @@ async function getVideosList(channelInfo, pageToken) {
   }
 }
 
-function createDownloadFolderIfNotExists() {
-  return new Promise(async (resolve, reject) => {
-    try {
-      await fs.promises.access(DOWNLOAD_LOCATION)
-      resolve()
-    } catch (e) {
-      if (e.code === 'ENOENT') {
-        // Create folder if doesnt exist
-        await fs.promises.mkdir(DOWNLOAD_LOCATION)
-        resolve()
-      } else {
-        reject(e)
-      }
-    }
-  })
-}
-
-async function getAccessToken() {
+async function getAccessToken () {
   const { data: {
-    client_id,
-    client_secret
+    client_id: clientId,
+    client_secret: clientSecret
   } } = await axios.get(`${INSTANCE_API_URL}/oauth-clients/local`)
   const {
     data: {
-      access_token,
-      expires_in,
-      refresh_token
+      access_token: accessToken
     }
   } = await axios.post(`${INSTANCE_API_URL}/users/token`, querystring.stringify({
-    client_id,
-    client_secret,
+    clientId,
+    clientSecret,
     grant_type: 'password',
     response_type: 'code',
     username: PEERTUBE_USERNAME,
     password: PEERTUBE_PASSWORD
   }), {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    })
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  })
 
-  return access_token
+  return accessToken
 }
 
-async function importVideo(index) {
+async function importVideo (index) {
   const accessToken = await getAccessToken()
-  const videoToUpload = APP_STATE.videosList[index];
+  const videoToUpload = APP_STATE.videosList[index]
   console.log(`Triggering import for video from ${videoToUpload.videoUrl}`)
-  const formData = new FormData();
+  const formData = new FormData()
   formData.append('channelId', PEERTUBE_CHANNEL_ID)
   formData.append('name', videoToUpload.title)
   formData.append('description', videoToUpload.description)
@@ -144,19 +122,18 @@ async function importVideo(index) {
     headers: {
       ...formData.getHeaders(),
       'Authorization': `Bearer ${accessToken}`
-    },
+    }
   })
 }
 
-async function yt2pt(limit) {
+async function yt2pt (limit) {
   try {
     await getChannelInformation(YOUTUBE_CHANNEL_ID)
     await getVideosList(APP_STATE.channelInfo)
-    let retries = 0;
-    let videosUploaded = 0;
+    let videosUploaded = 0
     while (videosUploaded < limit) {
       await importVideo(videosUploaded)
-      videosUploaded += 1;
+      videosUploaded += 1
       console.log(`uploaded ${videosUploaded} / ${APP_STATE.channelInfo.totalVideos}`)
     }
   } catch (e) {
