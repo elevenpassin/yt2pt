@@ -271,12 +271,24 @@ async function getVideosToDownload () {
   })
 }
 
+function fetchVideosToUpload () {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT * FROM videos WHERE uploaded=0', (err, videos) => {
+      if (err) reject(err)
+
+      resolve(videos)
+    })
+  })
+}
+
 async function yt2pt (limit) {
   try {
     await prepareDatabase()
     const channelInfo = await getChannelInformation(YOUTUBE_CHANNEL_ID)
-    const channelVideos = await getAllVideosList(channelInfo)
-    console.log(JSON.stringify(APP_STATE, null, 2))
+    await getAllVideosList(channelInfo)
+    const videosToUpload = await fetchVideosToUpload()
+    console.log(`Videos to upload: ${videosToUpload.length}`)
+    // console.log(JSON.stringify(APP_STATE, null, 2))
     // const videosToDownload = await getVideosToDownload()
     // await downloadVideos(limit)
     // const { data: {
