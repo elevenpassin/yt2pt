@@ -27,6 +27,7 @@
     "googleapis": "^41.0.1",
     "nodemon": "^1.19.0",
     "querystring": "^0.2.0",
+    "sqlite3": "^4.0.9",
     "youtube-dl": "^2.0.0"
   },
   "devDependencies": {
