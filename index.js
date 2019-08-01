@@ -38,7 +38,7 @@ const db = new sqlite3.Database(DATABASE_LOCATION)
  *
  * @returns {Promise<undefined>}
  */
-function prepareDatabase() {
+function prepareDatabase () {
   return new Promise((resolve, reject) => {
     try {
       db.serialize(() => {
@@ -62,7 +62,7 @@ function prepareDatabase() {
  * @param {*} id
  * @returns
  */
-function getChannelInformation(id) {
+function getChannelInformation (id) {
   return new Promise(async (resolve, reject) => {
     try {
       const response = await youtube.channels.list({
@@ -120,8 +120,8 @@ function getChannelInformation(id) {
   })
 }
 
-function getAllVideosList(channelInfo, pageToken) {
-  function fetchVideos(playlistId, pageToken) {
+function getAllVideosList (channelInfo, pageToken) {
+  function fetchVideos (playlistId, pageToken) {
     return youtube.playlistItems.list({
       playlistId,
       part: 'id,snippet,contentDetails',
@@ -130,17 +130,26 @@ function getAllVideosList(channelInfo, pageToken) {
     })
   }
 
-  function recordVideo({ videoId, title, description }) {
+  function recordVideo ({ videoId, title, description }) {
     return new Promise((resolve, reject) => {
       const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`
-      db.run(
-        `INSERT INTO videos VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [videoId, youtubeUrl, '', 0, 0, title, description],
-        (_, err) => {
-          if (err) reject(err)
-          resolve()
+      db.get('SELECT * from videos WHERE videoId = ?', videoId, (err, video) => {
+        if (err) {
+          reject(err)
         }
-      )
+
+        if (!video) {
+          db.run(
+            `INSERT INTO videos VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [videoId, youtubeUrl, '', 0, 0, title, description],
+            (_, err) => {
+              if (err) reject(err)
+              resolve()
+            }
+          )
+        }
+        resolve()
+      })
     })
   }
 
@@ -177,14 +186,13 @@ function getAllVideosList(channelInfo, pageToken) {
       console.log('Recorded all videos to database!')
       APP_STATE.videosList = videos
       resolve(videos)
-      return videos
     } catch (e) {
       reject(e)
     }
   })
 }
 
-function createDownloadFolderIfNotExists() {
+function createDownloadFolderIfNotExists () {
   return new Promise(async (resolve, reject) => {
     try {
       await fs.promises.access(DOWNLOAD_LOCATION)
@@ -201,7 +209,7 @@ function createDownloadFolderIfNotExists() {
   })
 }
 
-function downloadVideo(videoId) {
+function downloadVideo (videoId) {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
   const video = youtubeDl(videoUrl)
   const videoLocation = `${DOWNLOAD_LOCATION}/${videoId}.mp4`
@@ -227,7 +235,7 @@ function downloadVideo(videoId) {
   })
 }
 
-async function downloadVideos(limit = 0) {
+async function downloadVideos (limit = 0) {
   let videosDownloaded = 0
   try {
     await getChannelInformation(YOUTUBE_CHANNEL_ID)
@@ -248,7 +256,7 @@ async function downloadVideos(limit = 0) {
   }
 }
 
-async function getVideosToDownload() {
+async function getVideosToDownload () {
   return new Promise((resolve, reject) => {
     try {
       db.serialize(() => {
@@ -263,17 +271,18 @@ async function getVideosToDownload() {
   })
 }
 
-async function yt2pt(limit) {
+async function yt2pt (limit) {
   try {
     await prepareDatabase()
     const channelInfo = await getChannelInformation(YOUTUBE_CHANNEL_ID)
     const channelVideos = await getAllVideosList(channelInfo)
-    const videosToDownload = await getVideosToDownload()
+    console.log(JSON.stringify(APP_STATE, null, 2))
+    // const videosToDownload = await getVideosToDownload()
     // await downloadVideos(limit)
     // const { data: {
     //   client_id: clientId,
     //   client_secret: clientSecret
-    // } } = await axios.get(`${INSTANCE_API_URL}/oauth-clients/local`)
+    // } } = await axios.get(`${INSTAN`CE_API_URL}/oauth-clients/local`)
     // const {
     //   data: {
     //     access_token: accessToken,
@@ -320,4 +329,4 @@ async function yt2pt(limit) {
   }
 }
 
-yt2pt(1)
+yt2pt()
